@@ -8,7 +8,11 @@ if(CROSS)
   set(CMAKE_STRIP "${CROSS}-strip")
 
   set(C_FLAGS "-O2 -Wall -march=mips32r2 $ENV{CFLAGS}")
-  set(C_DEFS "-DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DLOCALE_NOT_USED")
+  set(C_DEFS -DSOCKLEN_T=socklen_t
+    -D_LARGEFILE_SOURCE=1
+    -D_FILE_OFFSET_BITS=64
+    -DLOCALE_NOT_USED
+    )
 
   set(CMAKE_C_FLAGS "${C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${C_FLAGS}")

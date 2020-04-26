@@ -25,7 +25,6 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <fcntl.h>
 
 #include "capture_and_encoding.h"
-#include "version.h"
 
 UsageEnvironment* env;
 

@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8)
 set(CROSS mips-linux-uclibc-gnu)
 
 # Include toolchain definitions
+include(cmake/Version.cmake)
 include(cmake/Toolchain.cmake)
 
 project(t20-rtspd C CXX)
@@ -24,6 +25,8 @@ add_executable(t20-rtspd on_demand_rtsp_server.cpp
   imp-common.c
   capture_and_encoding.cpp
   )
+
+set_source_files_properties(on_demand_rtsp_server.cpp PROPERTIES COMPILE_DEFINITIONS VERSION="${GIT_VERSION}")
 
 set(SYS_LIBS pthread m rt dl)
 
