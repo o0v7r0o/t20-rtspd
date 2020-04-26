@@ -23,7 +23,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <sys/types.h>  
 #include <sys/stat.h>
 #include <fcntl.h>
- 
+
 #include "capture_and_encoding.h"
 #include "version.h"
 
@@ -42,114 +42,131 @@ Boolean iFramesOnly = False;
 char const* inputFileName = "/tmp/h264_fifo";
 
 static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
-			   char const* streamName, char const* inputFileName); // fwd
+    char const* streamName, char const* inputFileName); // fwd
 
 static char newDemuxWatchVariable;
 
 static MatroskaFileServerDemux* matroskaDemux;
-static void onMatroskaDemuxCreation(MatroskaFileServerDemux* newDemux, void* /*clientData*/) {
-	matroskaDemux = newDemux;
-	newDemuxWatchVariable = 1;
+static void onMatroskaDemuxCreation(MatroskaFileServerDemux* newDemux, void* /*clientData*/)
+{
+  matroskaDemux = newDemux;
+  newDemuxWatchVariable = 1;
 }
 
 static OggFileServerDemux* oggDemux;
-static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*/) {
-	oggDemux = newDemux;
-	newDemuxWatchVariable = 1;
+static void onOggDemuxCreation(OggFileServerDemux* newDemux, void* /*clientData*/)
+{
+  oggDemux = newDemux;
+  newDemuxWatchVariable = 1;
 }
 
-int main(int argc, char** argv) {
-	// Begin by setting up our usage environment:
-	char const* versionFileName = "/tmp/version";
-	TaskScheduler* scheduler = BasicTaskScheduler::createNew();
-	env = BasicUsageEnvironment::createNew(*scheduler);
+int main(int argc, char** argv)
+{
+  // Begin by setting up our usage environment:
+  char const* versionFileName = "/tmp/version";
+  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  env = BasicUsageEnvironment::createNew(*scheduler);
 
-	int ver_fd;
-	int ret;
-	ver_fd = open(versionFileName, O_RDWR | O_CREAT | O_TRUNC, 0777);
-	if (ver_fd < 0) {
-		  *env << "Failed open /tmp/version\n";
-		  exit(1);
-	}
+  int ver_fd;
+  int ret;
+  ver_fd = open(versionFileName, O_RDWR | O_CREAT | O_TRUNC, 0777);
+  if (ver_fd < 0)
+  {
+    *env << "Failed open /tmp/version\n";
+    exit(1);
+  }
 
-	ret = write(ver_fd, VERSION, sizeof(VERSION));
-	if (ret != sizeof(VERSION)) {
-		*env << "write version failed!\n";
-	}
+  ret = write(ver_fd, VERSION, sizeof(VERSION));
+  if (ret != sizeof(VERSION))
+  {
+    *env << "write version failed!\n";
+  }
 
-	close(ver_fd);
+  close(ver_fd);
 
-	*env << "my-carrier-server version: " << VERSION << "\n";
+  *env << "my-carrier-server version: " << VERSION << "\n";
 
-	UserAuthenticationDatabase* authDB = NULL;
+  UserAuthenticationDatabase* authDB = NULL;
 #ifdef ACCESS_CONTROL
-	// To implement client access control to the RTSP server, do the following:
-	authDB = new UserAuthenticationDatabase;
-	authDB->addUserRecord("username1", "password1"); // replace these with real strings
-	// Repeat the above with each <username>, <password> that you wish to allow
-	// access to the server.
+  // To implement client access control to the RTSP server, do the following:
+  authDB = new UserAuthenticationDatabase;
+  authDB->addUserRecord("username1", "password1"); // replace these with real strings
+  // Repeat the above with each <username>, <password> that you wish to allow
+  // access to the server.
 #endif
-	int fd;
+  int fd;
 
-	capture_and_encoding();//基于君正提供的API初始化实现采集和编码模块
-	unlink(inputFileName);
-		
-	if (mkfifo(inputFileName, 0777) < 0) {
-			  *env << "mkfifo Failed\n";
-			  exit(1);; 
-	}
+  // Based on the API initialization provided by Ingenic
+  // to implement the acquisition and encoding module.
+  capture_and_encoding();
+  unlink(inputFileName);
 
-	if (fork() > 0) {
-		fd = open(inputFileName, O_RDWR | O_CREAT | O_TRUNC, 0777);
-		if (fd < 0) {
-			  *env << "Failed open fifo\n";
-			  exit(1);; 
-		}   
-		while (1) {
-			  get_stream(fd ,0);//基于君正提供的API实现采集和编码，并将编码后的数据保存到fifo中。
-		}
-	} else {
-		// Create a 'H264 Video RTP' sink from the RTP 'groupsock':
-		OutPacketBuffer::maxSize = 600000;
-		
-        // Create the RTSP server:
-		RTSPServer* rtspServer = RTSPServer::createNew(*env, 554, authDB);
-		if (rtspServer == NULL) {
-		  *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
-		  exit(1);
-		}
+  if (mkfifo(inputFileName, 0777) < 0)
+  {
+    *env << "mkfifo Failed\n";
+    exit(1);;
+  }
 
-		char const* descriptionString
-		  = "Session streamed by \"testOnDemandRTSPServer\"";
+  if (fork() > 0)
+  {
+    fd = open(inputFileName, O_RDWR | O_CREAT | O_TRUNC, 0777);
+    if (fd < 0)
+    {
+      *env << "Failed open fifo\n";
+      exit(1);;
+    }
+    while (1)
+    {
+      // Based on the API provided by Ingenic, the acquisition
+      // and encoding are realized, and the encoded data is saved in fifo.
+      get_stream(fd, 0);
+    }
+  }
+  else
+  {
+    // Create a 'H264 Video RTP' sink from the RTP 'groupsock':
+    OutPacketBuffer::maxSize = 600000;
 
-		// Set up each of the possible streams that can be served by the
-		// RTSP server.  Each such stream is implemented using a
-		// "ServerMediaSession" object, plus one or more
-		// "ServerMediaSubsession" objects for each audio/video substream.
+    // Create the RTSP server:
+    RTSPServer* rtspServer = RTSPServer::createNew(*env, 554, authDB);
+    if (rtspServer == NULL)
+    {
+      *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+      exit(1);
+    }
 
-		// A H.264 video elementary stream:
-		char const* streamName = "stream";
-		ServerMediaSession* sms
-		  = ServerMediaSession::createNew(*env, streamName, streamName,
-					      descriptionString);
-		sms->addSubsession(H264VideoFileServerMediaSubsession
-			       ::createNew(*env, inputFileName, reuseFirstSource));
-		rtspServer->addServerMediaSession(sms);
+    char const* descriptionString
+    = "Session streamed by \"testOnDemandRTSPServer\"";
 
-		announceStream(rtspServer, sms, streamName, inputFileName);
-	}
+    // Set up each of the possible streams that can be served by the
+    // RTSP server.  Each such stream is implemented using a
+    // "ServerMediaSession" object, plus one or more
+    // "ServerMediaSubsession" objects for each audio/video substream.
 
-	env->taskScheduler().doEventLoop(); // does not return
+    // A H.264 video elementary stream:
+    char const* streamName = "stream";
+    ServerMediaSession* sms
+    = ServerMediaSession::createNew(*env, streamName, streamName,
+        descriptionString);
+    sms->addSubsession(H264VideoFileServerMediaSubsession
+        ::createNew(*env, inputFileName, reuseFirstSource));
+    rtspServer->addServerMediaSession(sms);
 
-	return 0; // only to prevent compiler warning
+    announceStream(rtspServer, sms, streamName, inputFileName);
+  }
+
+  env->taskScheduler().doEventLoop(); // does not return
+
+  return 0; // only to prevent compiler warning
 }
 
 static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
-			   char const* streamName, char const* inputFileName) {
-	char* url = rtspServer->rtspURL(sms);
-	UsageEnvironment& env = rtspServer->envir();
-	env << "\n\"" << streamName << "\" stream, from the file \""
-	    << inputFileName << "\"\n";
-	env << "Play this stream using the URL \"" << url << "\"\n";
-	delete[] url;
+    char const* streamName, char const* inputFileName)
+{
+  char* url = rtspServer->rtspURL(sms);
+  UsageEnvironment& env = rtspServer->envir();
+  env << "\n\"" << streamName << "\" stream, from the file \""
+      << inputFileName << "\"\n";
+  env << "Play this stream using the URL \"" << url << "\"\n";
+  delete[] url;
 }
