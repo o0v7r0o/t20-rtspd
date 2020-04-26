@@ -1,3 +1,6 @@
 *.o
 version.h
 t20-rtspd
+.cproject
+.project
+.settings
