@@ -20,13 +20,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/live555/liveMedia)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/live555/basicUsageEnvironment)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/imp_sys)
 
-add_executable(t20-rtspd on_demand_rtsp_server.cpp
-  pwm.c
-  imp-common.c
-  capture_and_encoding.cpp
+add_executable(t20-rtspd
+  src/on_demand_rtsp_server.cpp
+  src/pwm.c
+  src/imp-common.c
+  src/capture_and_encoding.cpp
   )
 
-set_source_files_properties(on_demand_rtsp_server.cpp PROPERTIES COMPILE_DEFINITIONS VERSION="${GIT_VERSION}")
+set_source_files_properties(src/on_demand_rtsp_server.cpp PROPERTIES COMPILE_DEFINITIONS VERSION="${GIT_VERSION}")
 
 set(SYS_LIBS pthread m rt dl)
 
